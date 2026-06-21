@@ -100,6 +100,13 @@ program
 
             if (action === 'watch') {
                console.log(chalk.yellow('\n[Press ESC at any time to stop watching and return to the main menu]\n'));
+               
+               // Inquirer pauses stdin after prompts. We MUST resume it to catch ESC.
+               if (process.stdin.isTTY) {
+                 process.stdin.setRawMode(true);
+                 process.stdin.resume();
+               }
+
                isWatching = true;
                
                await new Promise((resolve) => {
@@ -109,7 +116,6 @@ program
                    .on('change', (fp) => doProcess(fp, out, size, format, bg, opt, chalk, ora))
                    .on('error', err => console.error(chalk.red(`Watcher error: ${err}`)));
                  
-                 // Poll to check if watcher was closed by ESC listener
                  const checkInterval = setInterval(() => {
                    if (!isWatching) {
                      clearInterval(checkInterval);
