@@ -16,12 +16,14 @@ program
   .option('-O, --optimize', 'Optimize output (higher compression)', false)
   .option('-w, --watch', 'Watch input files for changes', false)
   .action(async (inputPattern, output, options) => {
-    // Enable ESC key to cancel the process at any time
+    // Enable ESC key to cancel the process at any time (even in watch mode)
     const readline = require('readline');
     readline.emitKeypressEvents(process.stdin);
     if (process.stdin.isTTY) {
+      process.stdin.setRawMode(true);
+      process.stdin.resume();
       process.stdin.on('keypress', (str, key) => {
-        if (key && key.name === 'escape') {
+        if (key && (key.name === 'escape' || (key.ctrl && key.name === 'c'))) {
           console.log('\n\x1b[33mAborted.\x1b[0m'); // yellow 'Aborted.'
           process.exit(0);
         }
