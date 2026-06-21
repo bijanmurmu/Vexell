@@ -1,6 +1,6 @@
 use clap::Parser;
 use std::fs;
-use usvg::{fontdb, Options, Tree};
+use usvg::{Options, Tree};
 use tiny_skia::Pixmap;
 
 #[derive(Parser, Debug)]
@@ -10,7 +10,6 @@ struct Args {
     input: String,
 
     /// Output PNG file path
-    #[arg(short, long)]
     output: String,
 
     /// Width of the output image (preserves aspect ratio)
