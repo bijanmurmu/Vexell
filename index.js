@@ -11,7 +11,7 @@ program
   .name('vexell')
   .description('Vexell: Blazing fast lossless SVG to image converter')
   .version('1.1.0')
-  .argument('<input>', 'Input SVG file or glob pattern')
+  .argument('[input]', 'Input SVG file or glob pattern (leave empty for interactive mode)')
   .argument('[output]', 'Output file or directory (required if not using watch with same dir)')
   .option('-s, --size <pixels>', 'Output resolution (width and height)', 1024)
   .option('-f, --format <type>', 'Output format (png, webp, avif, jpeg)', 'png')
@@ -19,6 +19,56 @@ program
   .option('-O, --optimize', 'Optimize output (higher compression)', false)
   .option('-w, --watch', 'Watch input files for changes', false)
   .action(async (inputPattern, output, options) => {
+    
+    if (!inputPattern) {
+      try {
+        const { input, select, confirm } = await import('@inquirer/prompts');
+        
+        console.log('\n✨ Welcome to Vexell Interactive Mode ✨\n');
+
+        inputPattern = await input({ 
+          message: 'Enter input SVG file or glob pattern (e.g., icon.svg, src/*.svg):',
+          validate: (val) => val.trim().length > 0 || 'Input pattern is required'
+        });
+        
+        options.watch = await confirm({ message: 'Enable watch mode?', default: false });
+
+        options.format = await select({
+          message: 'Select output format:',
+          choices: [
+            { name: 'PNG', value: 'png' },
+            { name: 'WebP', value: 'webp' },
+            { name: 'AVIF', value: 'avif' },
+            { name: 'JPEG', value: 'jpeg' },
+          ],
+        });
+
+        options.size = await input({ 
+          message: 'Enter output resolution in pixels:', 
+          default: '1024' 
+        });
+
+        const addBg = await confirm({ message: 'Add a background color?', default: false });
+        if (addBg) {
+          options.background = await input({ message: 'Enter background color (e.g. #ffffff or white):', default: '#ffffff' });
+        }
+
+        options.optimize = await confirm({ message: 'Enable aggressive optimization?', default: false });
+
+        const outInput = await input({ message: 'Enter output file or directory (leave blank to auto-generate):' });
+        output = outInput.trim() || undefined;
+        
+        console.log('\n🚀 Starting conversion...\n');
+      } catch (err) {
+        if (err.name === 'ExitPromptError') {
+          console.log('\nAborted.');
+          process.exit(0);
+        }
+        console.error('Error in interactive prompt:', err);
+        process.exit(1);
+      }
+    }
+
     const size = parseInt(options.size);
     const format = options.format.toLowerCase();
     
