@@ -1,0 +1,28 @@
+{
+  "name": "vexell",
+  "version": "1.0.0",
+  "description": "Blazing fast lossless SVG to PNG converter",
+  "main": "index.js",
+  "bin": {
+    "vexell": "./index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "svg",
+    "png",
+    "converter",
+    "vector",
+    "pixel",
+    "sharp",
+    "lossless"
+  ],
+  "author": "Orbit Ecosystem",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "commander": "^15.0.0",
+    "sharp": "^0.35.2"
+  }
+}
