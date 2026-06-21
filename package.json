@@ -1,7 +1,7 @@
 {
   "name": "vexell",
-  "version": "1.0.0",
-  "description": "Blazing fast lossless SVG to PNG converter",
+  "version": "1.0.1",
+  "description": "Blazing fast lossless SVG to image converter",
   "main": "index.js",
   "bin": {
     "vexell": "./index.js"

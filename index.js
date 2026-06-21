@@ -11,7 +11,7 @@ const readline = require('readline');
 program
   .name('vexell')
   .description('Vexell: Blazing fast lossless SVG to image converter')
-  .version('1.1.0')
+  .version('1.0.1')
   .argument('[input]', 'Input SVG file or glob pattern (leave empty for interactive mode)')
   .option('-b, --background <color>', 'Background color (e.g., "#ffffff", "white")')
   .option('-O, --optimize', 'Optimize output (higher compression)', false)
