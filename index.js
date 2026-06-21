@@ -3,35 +3,100 @@
 const { program } = require('commander');
 const sharp = require('sharp');
 const fs = require('fs');
+const path = require('path');
+const { globSync } = require('glob');
+const chokidar = require('chokidar');
 
 program
   .name('vexell')
-  .description('Vexell: Blazing fast lossless SVG to PNG converter')
-  .version('1.0.0')
-  .argument('<input>', 'Input SVG file')
-  .argument('<output>', 'Output PNG file')
+  .description('Vexell: Blazing fast lossless SVG to image converter')
+  .version('1.1.0')
+  .argument('<input>', 'Input SVG file or glob pattern')
+  .argument('[output]', 'Output file or directory (required if not using watch with same dir)')
   .option('-s, --size <pixels>', 'Output resolution (width and height)', 1024)
-  .action((input, output, options) => {
-    if (!fs.existsSync(input)) {
-      console.error(`Error: File ${input} not found.`);
+  .option('-f, --format <type>', 'Output format (png, webp, avif, jpeg)', 'png')
+  .option('-b, --background <color>', 'Background color (e.g., "#ffffff", "white")')
+  .option('-O, --optimize', 'Optimize output (higher compression)', false)
+  .option('-w, --watch', 'Watch input files for changes', false)
+  .action(async (inputPattern, output, options) => {
+    const size = parseInt(options.size);
+    const format = options.format.toLowerCase();
+    
+    if (!['png', 'webp', 'avif', 'jpeg', 'jpg'].includes(format)) {
+      console.error(`Error: Unsupported format ${format}`);
       process.exit(1);
     }
 
-    const size = parseInt(options.size);
+    const isOutputDirectory = !output || output.endsWith('/') || output.endsWith('\\') || (fs.existsSync(output) && fs.statSync(output).isDirectory()) || !output.includes('.');
 
-    console.log(`Vexellizing ${input} -> ${output}...`);
+    const processFile = async (filePath) => {
+      let outPath = output;
+      
+      if (!output) {
+         // Default to same directory, same name, new extension
+         outPath = filePath.replace(/\.svg$/i, `.${format}`);
+      } else if (isOutputDirectory) {
+         if (!fs.existsSync(output)) {
+           fs.mkdirSync(output, { recursive: true });
+         }
+         const baseName = path.basename(filePath, path.extname(filePath));
+         outPath = path.join(output, `${baseName}.${format}`);
+      }
 
-    sharp(input)
-      .resize(size, size, { fit: 'inside' })
-      .png({ compressionLevel: 9, adaptiveFiltering: true, force: true })
-      .toFile(output)
-      .then(info => {
+      console.log(`Vexellizing ${filePath} -> ${outPath}...`);
+
+      let pipeline = sharp(filePath).resize(size, size, { fit: 'inside' });
+
+      if (options.background) {
+        pipeline = pipeline.flatten({ background: options.background });
+      }
+
+      if (format === 'png') {
+        pipeline = pipeline.png({ 
+          compressionLevel: options.optimize ? 9 : 6, 
+          adaptiveFiltering: true, 
+          force: true 
+        });
+      } else if (format === 'webp') {
+        pipeline = pipeline.webp({ quality: options.optimize ? 80 : 100, lossless: !options.optimize });
+      } else if (format === 'avif') {
+        pipeline = pipeline.avif({ quality: options.optimize ? 50 : 80, lossless: !options.optimize });
+      } else if (format === 'jpeg' || format === 'jpg') {
+        pipeline = pipeline.jpeg({ quality: options.optimize ? 80 : 100 });
+      }
+
+      try {
+        const info = await pipeline.toFile(outPath);
         console.log(`Successfully rendered! (${info.width}x${info.height})`);
-      })
-      .catch(err => {
-        console.error(`Error converting file: ${err.message}`);
+      } catch (err) {
+        console.error(`Error converting file ${filePath}: ${err.message}`);
+      }
+    };
+
+    if (options.watch) {
+      console.log(`Watching for changes: ${inputPattern}`);
+      const watcher = chokidar.watch(inputPattern, { persistent: true });
+      watcher
+        .on('add', processFile)
+        .on('change', processFile)
+        .on('error', error => console.error(`Watcher error: ${error}`));
+    } else {
+      // Fix glob on windows (needs forward slashes)
+      const normalizedPattern = inputPattern.replace(/\\/g, '/');
+      const files = globSync(normalizedPattern);
+      
+      if (files.length === 0) {
+        console.error(`Error: No files found matching ${inputPattern}`);
         process.exit(1);
-      });
+      }
+      
+      if (files.length > 1 && !isOutputDirectory && output) {
+        console.error(`Error: Output must be a directory when processing multiple files.`);
+        process.exit(1);
+      }
+
+      await Promise.all(files.map(processFile));
+    }
   });
 
 program.parse();

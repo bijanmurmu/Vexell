@@ -22,7 +22,9 @@
   "license": "MIT",
   "type": "commonjs",
   "dependencies": {
+    "chokidar": "^5.0.0",
     "commander": "^15.0.0",
+    "glob": "^13.0.6",
     "sharp": "^0.35.2"
   }
 }
