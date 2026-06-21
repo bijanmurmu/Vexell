@@ -1,0 +1,10 @@
+[package]
+name = "Vexell"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.6.1", features = ["derive"] }
+resvg = "0.47.0"
+tiny-skia = "0.12.0"
+usvg = "0.47.0"
