@@ -12,13 +12,22 @@ program
   .description('Vexell: Blazing fast lossless SVG to image converter')
   .version('1.1.0')
   .argument('[input]', 'Input SVG file or glob pattern (leave empty for interactive mode)')
-  .argument('[output]', 'Output file or directory (required if not using watch with same dir)')
-  .option('-s, --size <pixels>', 'Output resolution (width and height)', 1024)
-  .option('-f, --format <type>', 'Output format (png, webp, avif, jpeg)', 'png')
   .option('-b, --background <color>', 'Background color (e.g., "#ffffff", "white")')
   .option('-O, --optimize', 'Optimize output (higher compression)', false)
   .option('-w, --watch', 'Watch input files for changes', false)
   .action(async (inputPattern, output, options) => {
+    // Enable ESC key to cancel the process at any time
+    const readline = require('readline');
+    readline.emitKeypressEvents(process.stdin);
+    if (process.stdin.isTTY) {
+      process.stdin.on('keypress', (str, key) => {
+        if (key && key.name === 'escape') {
+          console.log('\n\x1b[33mAborted.\x1b[0m'); // yellow 'Aborted.'
+          process.exit(0);
+        }
+      });
+    }
+
     // Import ESM packages dynamically
     const chalk = (await import('chalk')).default;
     const ora = (await import('ora')).default;
