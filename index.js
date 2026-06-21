@@ -19,22 +19,28 @@ program
   .option('-O, --optimize', 'Optimize output (higher compression)', false)
   .option('-w, --watch', 'Watch input files for changes', false)
   .action(async (inputPattern, output, options) => {
-    
+    // Import ESM packages dynamically
+    const chalk = (await import('chalk')).default;
+    const ora = (await import('ora')).default;
+    const figlet = require('figlet');
+
     if (!inputPattern) {
       try {
         const { input, select, confirm } = await import('@inquirer/prompts');
         
-        console.log('\n✨ Welcome to Vexell Interactive Mode ✨\n');
+        console.clear();
+        console.log(chalk.cyanBright(figlet.textSync('Vexell', { font: 'Slant' })));
+        console.log(chalk.gray('Blazing fast lossless SVG to image converter\n'));
 
         inputPattern = await input({ 
-          message: 'Enter input SVG file or glob pattern (e.g., icon.svg, src/*.svg):',
+          message: chalk.white('Enter input SVG file or glob pattern (e.g., icon.svg, src/*.svg):'),
           validate: (val) => val.trim().length > 0 || 'Input pattern is required'
         });
         
-        options.watch = await confirm({ message: 'Enable watch mode?', default: false });
+        options.watch = await confirm({ message: chalk.white('Enable watch mode?'), default: false });
 
         options.format = await select({
-          message: 'Select output format:',
+          message: chalk.white('Select output format:'),
           choices: [
             { name: 'PNG', value: 'png' },
             { name: 'WebP', value: 'webp' },
@@ -44,27 +50,26 @@ program
         });
 
         options.size = await input({ 
-          message: 'Enter output resolution in pixels:', 
+          message: chalk.white('Enter output resolution in pixels:'), 
           default: '1024' 
         });
 
-        const addBg = await confirm({ message: 'Add a background color?', default: false });
+        const addBg = await confirm({ message: chalk.white('Add a background color?'), default: false });
         if (addBg) {
-          options.background = await input({ message: 'Enter background color (e.g. #ffffff or white):', default: '#ffffff' });
+          options.background = await input({ message: chalk.white('Enter background color (e.g. #ffffff or white):'), default: '#ffffff' });
         }
 
-        options.optimize = await confirm({ message: 'Enable aggressive optimization?', default: false });
+        options.optimize = await confirm({ message: chalk.white('Enable aggressive optimization?'), default: false });
 
-        const outInput = await input({ message: 'Enter output file or directory (leave blank to auto-generate):' });
+        const outInput = await input({ message: chalk.white('Enter output file or directory (leave blank to auto-generate):') });
         output = outInput.trim() || undefined;
         
-        console.log('\n🚀 Starting conversion...\n');
       } catch (err) {
         if (err.name === 'ExitPromptError') {
-          console.log('\nAborted.');
+          console.log(chalk.yellow('\nAborted.'));
           process.exit(0);
         }
-        console.error('Error in interactive prompt:', err);
+        console.error(chalk.red('Error in interactive prompt:'), err);
         process.exit(1);
       }
     }
@@ -73,7 +78,8 @@ program
     const format = options.format.toLowerCase();
     
     if (!['png', 'webp', 'avif', 'jpeg', 'jpg'].includes(format)) {
-      console.error(`Error: Unsupported format ${format}`);
+      const chalk = (await import('chalk')).default;
+      console.error(chalk.red(`Error: Unsupported format ${format}`));
       process.exit(1);
     }
 
@@ -83,7 +89,6 @@ program
       let outPath = output;
       
       if (!output) {
-         // Default to same directory, same name, new extension
          outPath = filePath.replace(/\.svg$/i, `.${format}`);
       } else if (isOutputDirectory) {
          if (!fs.existsSync(output)) {
@@ -93,7 +98,7 @@ program
          outPath = path.join(output, `${baseName}.${format}`);
       }
 
-      console.log(`Vexellizing ${filePath} -> ${outPath}...`);
+      const spinner = ora(`Vexellizing ${chalk.cyan(filePath)} -> ${chalk.greenBright(outPath)}`).start();
 
       let pipeline = sharp(filePath).resize(size, size, { fit: 'inside' });
 
@@ -117,35 +122,36 @@ program
 
       try {
         const info = await pipeline.toFile(outPath);
-        console.log(`Successfully rendered! (${info.width}x${info.height})`);
+        spinner.succeed(`Rendered ${chalk.greenBright(outPath)} ${chalk.gray(`(${info.width}x${info.height})`)}`);
       } catch (err) {
-        console.error(`Error converting file ${filePath}: ${err.message}`);
+        spinner.fail(chalk.red(`Failed ${filePath}: ${err.message}`));
       }
     };
 
     if (options.watch) {
-      console.log(`Watching for changes: ${inputPattern}`);
+      console.log(chalk.blueBright(`\n👀 Watching for changes: ${inputPattern}\n`));
       const watcher = chokidar.watch(inputPattern, { persistent: true });
       watcher
         .on('add', processFile)
         .on('change', processFile)
-        .on('error', error => console.error(`Watcher error: ${error}`));
+        .on('error', error => console.error(chalk.red(`Watcher error: ${error}`)));
     } else {
-      // Fix glob on windows (needs forward slashes)
       const normalizedPattern = inputPattern.replace(/\\/g, '/');
       const files = globSync(normalizedPattern);
       
       if (files.length === 0) {
-        console.error(`Error: No files found matching ${inputPattern}`);
+        console.error(chalk.red(`\nError: No files found matching ${inputPattern}\n`));
         process.exit(1);
       }
       
       if (files.length > 1 && !isOutputDirectory && output) {
-        console.error(`Error: Output must be a directory when processing multiple files.`);
+        console.error(chalk.red(`\nError: Output must be a directory when processing multiple files.\n`));
         process.exit(1);
       }
 
+      console.log(chalk.blueBright(`\n🚀 Starting conversion for ${files.length} file(s)...\n`));
       await Promise.all(files.map(processFile));
+      console.log(chalk.greenBright(`\n✨ All tasks completed successfully!\n`));
     }
   });
 
