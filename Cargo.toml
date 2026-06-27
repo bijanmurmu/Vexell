@@ -1,10 +1,22 @@
 [package]
 name = "Vexell"
-version = "0.1.0"
-edition = "2024"
+version = "1.0.3"
+edition = "2021"
 
 [dependencies]
 clap = { version = "4.6.1", features = ["derive"] }
+dialoguer = { version = "0.11", features = ["completion"] }
+ctrlc = "3.4"
 resvg = "0.47.0"
 tiny-skia = "0.12.0"
 usvg = "0.47.0"
+rustyline = "14.0"
+console = "0.15.8"
+image = { version = "0.25.1", features = ["png", "jpeg", "webp"] }
+glob = "0.3.1"
+rayon = "1.10.0"
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8.12"
+oxipng = "9.1.2"
+indicatif = "0.17.8"
+webp = "0.3.1"

@@ -1,0 +1,48 @@
+name: Vexell Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-upload:
+    name: Build and Upload Release Binaries
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            name: vexell-linux-x64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            name: vexell-macos-x64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            name: vexell-windows-x64.exe
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.target }}
+          
+      - run: cargo build --release --target ${{ matrix.target }}
+      
+      - name: Rename Binary (Unix)
+        if: matrix.os != 'windows-latest'
+        run: mv target/${{ matrix.target }}/release/Vexell ${{ matrix.name }}
+        
+      - name: Rename Binary (Windows)
+        if: matrix.os == 'windows-latest'
+        run: mv target/${{ matrix.target }}/release/Vexell.exe ${{ matrix.name }}
+        
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ matrix.name }}
+          generate_release_notes: true

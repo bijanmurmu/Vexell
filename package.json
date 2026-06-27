@@ -1,13 +1,14 @@
 {
   "name": "vexell",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Blazing fast lossless SVG to image converter",
   "main": "index.js",
   "bin": {
     "vexell": "./index.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "node install.js"
   },
   "keywords": [
     "svg",
@@ -21,14 +22,5 @@
   "author": "Orbit Ecosystem",
   "license": "MIT",
   "type": "commonjs",
-  "dependencies": {
-    "@inquirer/prompts": "^8.5.2",
-    "chalk": "^5.6.2",
-    "chokidar": "^5.0.0",
-    "commander": "^15.0.0",
-    "figlet": "^1.11.0",
-    "glob": "^13.0.6",
-    "ora": "^9.4.0",
-    "sharp": "^0.35.2"
-  }
+  "dependencies": {}
 }
